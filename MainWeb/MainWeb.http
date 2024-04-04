@@ -1,0 +1,6 @@
+@MainWeb_HostAddress = http://localhost:5028
+
+POST {{MainWeb_HostAddress}}/api/verify/validate
+Accept: application/json
+
+###
