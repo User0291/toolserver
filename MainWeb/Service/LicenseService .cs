@@ -1,5 +1,5 @@
 ﻿
-namespace MainWeb.Service
+namespace MainWeb
 {
     public class LicenseService : ILicenseService
     {

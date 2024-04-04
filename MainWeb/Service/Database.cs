@@ -1,6 +1,6 @@
 ﻿using MySql.Data.MySqlClient;
 
-namespace MainWeb.Service
+namespace MainWeb
 {
     public class DatabaseService
     {

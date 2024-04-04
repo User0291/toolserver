@@ -1,12 +1,11 @@
-﻿using MainWeb.Service;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MainWeb.Controllers
+namespace MainWeb
 {
 
-    [Route("verify")]
     [ApiController]
+    [Route("api")]
     public class VerifyController : ControllerBase
     {
         private readonly ILicenseService _licenseService;
@@ -16,12 +15,12 @@ namespace MainWeb.Controllers
             _licenseService = licenseService ?? throw new ArgumentNullException(nameof(licenseService));
         }
 
-        [HttpPost("validate")]
-        public async Task<IActionResult> ValidateLicense([FromBody] ValidationRequest request)
+        [HttpGet("login")]
+        public async Task<IActionResult> ValidateLicense([FromQuery] string licenseKey, [FromQuery] string deviceId)
         {
             try
             {
-                bool isValid = await _licenseService.ValidateLicenseAsync(request.LicenseKey, request.DeviceId);
+                bool isValid = await _licenseService.ValidateLicenseAsync(licenseKey, deviceId);
 
                 if (isValid)
                 {
