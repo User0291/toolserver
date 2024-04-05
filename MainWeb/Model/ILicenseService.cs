@@ -2,6 +2,6 @@
 {
     public interface ILicenseService
     {
-        Task<bool> ValidateLicenseAsync(string licenseKey, string deviceId);
+        Task<VerifyRespond> ValidateLicenseAsync(string licenseKey, string deviceId);
     }
 }

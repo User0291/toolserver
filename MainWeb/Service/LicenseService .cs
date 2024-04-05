@@ -11,7 +11,7 @@ namespace MainWeb
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
         }
-        public async Task<bool> ValidateLicenseAsync(string licenseKey, string deviceId)
+        public async Task<VerifyRespond> ValidateLicenseAsync(string licenseKey, string deviceId)
         {
             User user = await _databaseService.GetUserByLicenseKeyAsync(licenseKey);
             //先判断卡密是否存在
@@ -23,7 +23,7 @@ namespace MainWeb
                     user.IsUsed = true;
                     user.DeviceId = deviceId;
                     await _databaseService.UpdateUserAsync(user);
-                    return true;
+                    return new VerifyRespond(true,user.ExpiryDate);
                 }
                 //然后判断卡密是否过期
                 else if (user.ExpiryDate > DateTime.UtcNow)
@@ -32,7 +32,7 @@ namespace MainWeb
                     if (user.DeviceId == deviceId)
                     {
                         // 设备号匹配，允许登录
-                        return true;
+                        return new VerifyRespond(true, user.ExpiryDate);
                     }
                     //不一致
                     else
@@ -42,20 +42,21 @@ namespace MainWeb
                         {
                             // 更新卡密的到期时间，减少3小时
                             user.ExpiryDate = user.ExpiryDate.AddHours(-3);
+                            user.DeviceId = deviceId;
                             await _databaseService.UpdateUserAsync(user);
-                            return true;
+                            return new VerifyRespond(true, user.ExpiryDate);
                         }
                         else
                             // 卡密剩余时间不足3小时，不允许登录
-                            return false;
+                            return new VerifyRespond(false, user.ExpiryDate);
                     }
                 }
                 else
-                    return false;
+                    return new VerifyRespond(false, DateTime.Now.Date);
             }
             else
                 // 卡密不存在
-                return false;
+                return new VerifyRespond(false, DateTime.Now.Date);
         }
     }
 }

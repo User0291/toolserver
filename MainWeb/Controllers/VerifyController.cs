@@ -20,22 +20,22 @@ namespace MainWeb
         {
             try
             {
-                bool isValid = await _licenseService.ValidateLicenseAsync(licenseKey, deviceId);
+                VerifyRespond VerifyRespond = await _licenseService.ValidateLicenseAsync(licenseKey, deviceId);
 
-                if (isValid)
+                if (VerifyRespond.isValid)
                 {
-                    return Ok(new { IsValid = true, Message = "License is valid." });
+                    return Ok(new { IsValid = true, Message = "許可證有效期至:"+ VerifyRespond.expiryTime});
                 }
                 else
                 {
-                    return BadRequest(new { IsValid = false, Message = "License is invalid." });
+                    return BadRequest(new { IsValid = false, Message = "拒絕登入" });
                 }
             }
             catch (Exception ex)
             {
                 // 记录异常并返回错误响应
                 // ILogger 或者其他日志库可以用于记录异常信息
-                return StatusCode(500, new { IsValid = false, Message = "An error occurred while validating license." });
+                return StatusCode(500, new { IsValid = false, Message = "未知錯誤" });
             }
         }
     }
