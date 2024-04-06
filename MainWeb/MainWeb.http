@@ -1,0 +1,5 @@
+@MainWeb_HostAddress = http://localhost:32774
+
+POST {{MainWeb_HostAddress}}
+Accept: application/json
+###
