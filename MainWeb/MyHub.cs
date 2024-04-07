@@ -179,13 +179,13 @@ namespace MainWeb
                         try
                         {
                             // 根据订阅和设备ID生成密钥
-                            //byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
+                            byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
                             byte[] fileContent = await GetFileContent(fileName);
                             if (fileContent != null)
                             {
                                 // 使用对称加密算法加密文件
-                                //byte[] encryptedFile = EncryptFile(fileContent, key);
-                                string base64Content = Convert.ToBase64String(fileContent);
+                                byte[] encryptedFile = EncryptFile(fileContent, key);
+                                string base64Content = Convert.ToBase64String(encryptedFile);
                                 await Clients.Caller.SendAsync("ReceiveFiles", fileName, base64Content);
                             }
                             else
@@ -246,6 +246,38 @@ namespace MainWeb
             {
                 // 如果写入文件时发生异常，则记录异常并输出到控制台
                 Console.WriteLine("An error occurred while writing log to file: " + ex.Message);
+            }
+        }
+        private byte[] GenerateKeyFromSubscriptionAndDeviceID(string license, string deviceId)
+        {
+            string combinedString = license + deviceId;
+
+            // 使用 SHA256 计算哈希值
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(combinedString));
+                return hashBytes;
+            }
+        }
+        private byte[] EncryptFile(byte[] fileBytes, byte[] key)
+        {
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = key;
+                aes.GenerateIV();
+
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    ms.Write(aes.IV, 0, aes.IV.Length);
+
+                    using (ICryptoTransform encryptor = aes.CreateEncryptor())
+                    using (CryptoStream cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                    {
+                        cs.Write(fileBytes, 0, fileBytes.Length);
+                    }
+
+                    return ms.ToArray();
+                }
             }
         }
 
