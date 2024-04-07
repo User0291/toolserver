@@ -128,50 +128,58 @@ namespace MainWeb
         public async Task RequestFiles(string license, string deviceId)
         {
             User user = await _databaseService.GetUserByLicenseKeyAsync(license);
-            if (user == null)
+            try
             {
-                // 越權請求
-                await Clients.Caller.SendAsync("Unauthorized", "未知錯誤！");
-            }
-            else if (user.DeviceId != deviceId && DateTime.Now > user.ExpiryDate)
-            {
-                // 越權請求
-                await Clients.Caller.SendAsync("Unauthorized", "未知錯誤！");
-            }
-            else
-            {
-                var tasks = fileNames.Select(async fileName =>
+
+                if (user == null)
                 {
-                    await _semaphore.WaitAsync(); // 等待信号量，限制并发请求数
-                    try
+                    // 越權請求
+                    await Clients.Caller.SendAsync("Unauthorized", "未知錯誤！");
+                }
+                else if (user.DeviceId != deviceId && DateTime.Now > user.ExpiryDate)
+                {
+                    // 越權請求
+                    await Clients.Caller.SendAsync("Unauthorized", "未知錯誤！");
+                }
+                else
+                {
+                    var tasks = fileNames.Select(async fileName =>
                     {
-                        // 根据订阅和设备ID生成密钥
-                        //byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
-                        byte[] fileContent = await GetFileContent(fileName);
-                        if (fileContent != null)
+                        await _semaphore.WaitAsync(); // 等待信号量，限制并发请求数
+                        try
                         {
-                            // 使用对称加密算法加密文件
-                            //byte[] encryptedFile = EncryptFile(fileContent, key);
-                            string base64Content = Convert.ToBase64String(fileContent);
-                            await Clients.Caller.SendAsync("ReceiveFiles", fileName, base64Content);
+                            // 根据订阅和设备ID生成密钥
+                            //byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
+                            byte[] fileContent = await GetFileContent(fileName);
+                            if (fileContent != null)
+                            {
+                                // 使用对称加密算法加密文件
+                                //byte[] encryptedFile = EncryptFile(fileContent, key);
+                                string base64Content = Convert.ToBase64String(fileContent);
+                                await Clients.Caller.SendAsync("ReceiveFiles", fileName, base64Content);
+                            }
+                            else
+                            {
+                                await Clients.Caller.SendAsync("Error", "未知錯誤！");
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
+                            Console.WriteLine(ex.Message);
                             await Clients.Caller.SendAsync("Error", "未知錯誤！");
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                        await Clients.Caller.SendAsync("Error", "未知錯誤！");
-                    }
-                    finally
-                    {
-                        _semaphore.Release(); // 释放信号量
-                    }
-                }).ToList(); // 转换成列表以触发立即执行
+                        finally
+                        {
+                            _semaphore.Release(); // 释放信号量
+                        }
+                    }).ToList(); // 转换成列表以触发立即执行
 
-                await Task.WhenAll(tasks); // 等待所有文件请求完成
+                    await Task.WhenAll(tasks); // 等待所有文件请求完成
+                }
+            }
+            catch(Exception ex)
+            {
+                await Clients.Caller.SendAsync("Error", "未知錯誤！"+ ex.Message);
             }
         }
         /// <summary>
