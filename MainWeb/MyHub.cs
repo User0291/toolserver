@@ -166,7 +166,7 @@ namespace MainWeb
                         catch (Exception ex)
                         {
                             Console.WriteLine(ex.Message);
-                            await Clients.Caller.SendAsync("Error", "未知錯誤！");
+                            await Clients.Caller.SendAsync("Error", "未知錯誤！"+ ex.Message);
                         }
                         finally
                         {
