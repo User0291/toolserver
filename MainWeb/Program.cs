@@ -1,4 +1,5 @@
 using MainWeb;
+using Microsoft.AspNetCore.SignalR;
 using System.Configuration;
 using System.Data.SqlClient;
 
@@ -14,6 +15,10 @@ builder.Services.AddScoped<ILicenseService, LicenseService>();
 // 注册 ILogger<MyHub> 的实例
 builder.Services.AddLogging();
 builder.Services.AddSingleton<ILogger<MyHub>, Logger<MyHub>>();
+builder.Services.Configure<HubOptions>(options =>
+{
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30); // 设置客户端超时时间为 30 秒
+});
 builder.Services.AddSignalR(); // 添加 SignalR 服务
 var app = builder.Build();
 
