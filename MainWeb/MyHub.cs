@@ -104,7 +104,7 @@ namespace MainWeb
                     await _databaseService.UpdateUserAsync(user);
                     //允許登錄
                     // 登录成功逻辑
-                    await Clients.Caller.SendAsync("LoginSuccess", "登錄成功 到期時間:" + user.ExpiryDate + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                    await Clients.Caller.SendAsync("LoginSuccess", "登錄成功 到期時間:" + Utils.FormatDateTime(user.ExpiryDate));
                 }
                 //被使用過则进行设备号判断 是否一致
                 else if (user.DeviceId != deviceId)
@@ -124,13 +124,13 @@ namespace MainWeb
                         await _databaseService.UpdateUserAsync(user);
                         //允許登錄
                         // 登录成功逻辑
-                        await Clients.Caller.SendAsync("LoginSuccess", "登錄成功 到期時間:" + user.ExpiryDate + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                        await Clients.Caller.SendAsync("LoginSuccess", "登錄成功 到期時間:" +Utils.FormatDateTime(user.ExpiryDate));
                     }
                 }
                 else
                 {
                     // 登录成功逻辑
-                    await Clients.Caller.SendAsync("LoginSuccess", "登錄成功 到期時間:" + user.ExpiryDate+ "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                    await Clients.Caller.SendAsync("LoginSuccess", "登錄成功 到期時間:" + Utils.FormatDateTime(user.ExpiryDate));
                 }
             }
             catch (Exception ex)
@@ -152,7 +152,7 @@ namespace MainWeb
             {
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
                 WriteLogToFile("toolserverlog.txt", logMessage);
-                await Clients.Caller.SendAsync("Error", "未知錯誤！" + ex.Message + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                await Clients.Caller.SendAsync("Error", "未知錯誤！");
             }
         }
         public async Task RequestFiles(string license, string deviceId)
@@ -164,12 +164,12 @@ namespace MainWeb
                 if (user == null)
                 {
                     // 越權請求
-                    await Clients.Caller.SendAsync("Unauthorized", "未知錯誤！" + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                    await Clients.Caller.SendAsync("Unauthorized", "未知錯誤！");
                 }
                 else if (user.DeviceId != deviceId && DateTime.Now > user.ExpiryDate)
                 {
                     // 越權請求
-                    await Clients.Caller.SendAsync("Unauthorized", "未知錯誤！" + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                    await Clients.Caller.SendAsync("Unauthorized", "未知錯誤！");
                 }
                 else
                 {
@@ -190,14 +190,14 @@ namespace MainWeb
                             }
                             else
                             {
-                                await Clients.Caller.SendAsync("Error", "未知錯誤！" + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                                await Clients.Caller.SendAsync("Error", "未知錯誤！");
                             }
                         }
                         catch (Exception ex)
                         {
                             string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
                             WriteLogToFile("toolserverlog.txt", logMessage);
-                            await Clients.Caller.SendAsync("Error", "未知錯誤！" + ex.Message + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                            await Clients.Caller.SendAsync("Error", "未知錯誤！");
                         }
                         finally
                         {
@@ -213,7 +213,7 @@ namespace MainWeb
 
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
                 WriteLogToFile("toolserverlog.txt", logMessage);
-                await Clients.Caller.SendAsync("Error", "未知錯誤！" + ex.Message + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                await Clients.Caller.SendAsync("Error", "未知錯誤！" + ex.Message + "当前程序目录：");
             }
         }
         /// <summary>
@@ -231,7 +231,7 @@ namespace MainWeb
             {
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
                 WriteLogToFile("toolserverlog.txt", logMessage);
-                await Clients.Caller.SendAsync("Error", "未知錯誤！" + "当前程序目录：" + AppDomain.CurrentDomain.BaseDirectory);
+                await Clients.Caller.SendAsync("Error", "未知錯誤！");
                 return null;
             }
         }
