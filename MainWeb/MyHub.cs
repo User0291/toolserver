@@ -13,15 +13,15 @@ namespace MainWeb
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(10); // 限制并发请求数为 10
         private readonly Dictionary<string, string> _userConnectionMap = new Dictionary<string, string>();
         private readonly DatabaseService _databaseService;
-        private readonly List<string> fileNames = ["/www/toolserverscr/content-metadata", "/www/toolserverscr/content-document"];
+        private readonly string directoryPath = "/www/toolserverscr/";
+        private readonly List<string> fileNames = ["content-metadata", "content-document"];
         private readonly string Notice = "暫時沒有新通知";
         private readonly ILogger<MyHub> _logger;
-        public MyHub(DatabaseService databaseService)
+        public MyHub(ILogger<MyHub> logger, DatabaseService databaseService)
         {
             _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
-            _logger = _logger ?? throw new ArgumentNullException(nameof(_logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-
         // 当客户端连接时调用此方法
         public override async Task OnConnectedAsync()
         {
@@ -180,7 +180,7 @@ namespace MainWeb
                         {
                             // 根据订阅和设备ID生成密钥
                             //byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
-                            byte[] fileContent = await GetFileContent(fileName);
+                            byte[] fileContent = await GetFileContent(Path.Combine(directoryPath,fileName));
                             if (fileContent != null)
                             {
                                 // 使用对称加密算法加密文件
@@ -229,7 +229,6 @@ namespace MainWeb
             }
             catch (Exception ex)
             {
-
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
                 WriteLogToFile("/www/toolserverlog.txt", logMessage);
                 await Clients.Caller.SendAsync("Error", "未知錯誤！");
