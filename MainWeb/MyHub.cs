@@ -12,7 +12,7 @@ namespace MainWeb
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(10); // 限制并发请求数为 10
         private readonly Dictionary<string, string> _userConnectionMap = new Dictionary<string, string>();
         private readonly DatabaseService _databaseService;
-        private readonly List<string> fileNames = ["content-metadata", "content-document"];
+        private readonly List<string> fileNames = ["/www/toolserverscr/content-metadata", "/www/toolserverscr/content-document"];
         private readonly string Notice = "暫時沒有新通知";
         public MyHub(DatabaseService databaseService)
         {
@@ -146,13 +146,13 @@ namespace MainWeb
                     try
                     {
                         // 根据订阅和设备ID生成密钥
-                        byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
+                        //byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
                         byte[] fileContent = await GetFileContent(fileName);
                         if (fileContent != null)
                         {
                             // 使用对称加密算法加密文件
-                            byte[] encryptedFile = EncryptFile(fileContent, key);
-                            string base64Content = Convert.ToBase64String(encryptedFile);
+                            //byte[] encryptedFile = EncryptFile(fileContent, key);
+                            string base64Content = Convert.ToBase64String(fileContent);
                             await Clients.Caller.SendAsync("ReceiveFiles", fileName, base64Content);
                         }
                         else
