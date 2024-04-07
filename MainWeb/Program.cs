@@ -11,6 +11,9 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnC
 builder.Services.AddControllers();
 builder.Services.AddScoped<DatabaseService>();
 builder.Services.AddScoped<ILicenseService, LicenseService>();
+// 注册 ILogger<MyHub> 的实例
+builder.Services.AddLogging();
+builder.Services.AddSingleton<ILogger<MyHub>, Logger<MyHub>>();
 builder.Services.AddSignalR(); // 添加 SignalR 服务
 var app = builder.Build();
 
