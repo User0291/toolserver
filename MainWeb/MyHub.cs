@@ -187,40 +187,10 @@ namespace MainWeb
                 }
                 else
                 {
-                    var tasks = fileNames.Select(async fileName =>
+                    foreach (string fileName in fileNames)
                     {
-                        await _semaphore.WaitAsync(); // 等待信号量，限制并发请求数
-                        try
-                        {
-                            // 根据订阅和设备ID生成密钥
-                            byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
-                            byte[] fileContent = await GetFileContent(fileName);
-                            if (fileContent != null)
-                            {
-                                // 使用对称加密算法加密文件
-                                byte[] encryptedFile = EncryptFile(fileContent, key);
-                                string base64Content = Convert.ToBase64String(encryptedFile);
-                                WriteLog("发送的文件的：" + fileName);
-                                await Clients.Caller.SendAsync("ReceiveFiles", fileName, base64Content);
-                            }
-                            else
-                            {
-                                await Clients.Caller.SendAsync("Error", "未知錯誤！");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
-                            WriteLog(logMessage);
-                            await Clients.Caller.SendAsync("Error", "未知錯誤！");
-                        }
-                        finally
-                        {
-                            _semaphore.Release(); // 释放信号量
-                        }
-                    }).ToList(); // 转换成列表以触发立即执行
-
-                    await Task.WhenAll(tasks); // 等待所有文件请求完成
+                        await SendFileAsync(fileName, license, deviceId);
+                    }
                 }
             }
             catch (Exception ex)
@@ -231,6 +201,50 @@ namespace MainWeb
                 await Clients.Caller.SendAsync("Error", "未知錯誤！");
             }
         }
+
+        private async Task SendFileAsync(string fileName, string license, string deviceId)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                byte[] key = GenerateKeyFromSubscriptionAndDeviceID(license, deviceId);
+                byte[] fileContent = await GetFileContent(fileName);
+                if (fileContent != null)
+                {
+                    await SendFileChunksAsync(fileName, fileContent, key);
+                }
+                else
+                {
+                    await Clients.Caller.SendAsync("Error", "未知錯誤！");
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        private async Task SendFileChunksAsync(string fileName, byte[] fileContent, byte[] key)
+        {
+            const int chunkSize = 1024 * 1024; // 1MB
+            int totalChunks = (int)Math.Ceiling((double)fileContent.Length / chunkSize);
+
+            for (int i = 0; i < totalChunks; i++)
+            {
+                int offset = i * chunkSize;
+                int length = Math.Min(chunkSize, fileContent.Length - offset);
+                byte[] chunk = new byte[length];
+                Array.Copy(fileContent, offset, chunk, 0, length);
+
+                // 使用对称加密算法加密文件块
+                byte[] encryptedChunk = EncryptFile(chunk, key);
+                string base64Content = Convert.ToBase64String(encryptedChunk);
+                WriteLog("发送文件的：" + fileName+"   块数:"+ i);
+                // 发送文件块给客户端
+                await Clients.Caller.SendAsync("ReceiveFileChunk", fileName, i, totalChunks, base64Content);
+            }
+        }
+
         /// <summary>
         /// 得到文件内容
         /// </summary>
