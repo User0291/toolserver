@@ -31,16 +31,22 @@ namespace MainWeb
                 // 保存连接 ID 和用户标识符之间的映射关系
                 string userId = GetUserIdFromContext(Context);
                 _userConnectionMap[userId] = connectionId;
-
+                // 获取客户端的 IP 地址
+                var clientIpAddress = Context.GetHttpContext()?.Connection.RemoteIpAddress?.ToString();
+                // 将 IP 地址写入文件
+                // 将连接 ID 和 IP 地址写入日志文件
+                string logMessage = $"Client connected. Connection ID: {connectionId}, IP Address: {clientIpAddress ?? "Unknown"}";
+                WriteLog(logMessage);
                 await base.OnConnectedAsync();
             }
             catch (Exception ex)
             {
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
-                WriteLogToFile("toolserverlog.txt", logMessage);
+                WriteLog(logMessage);
             }
 
         }
+        
         private string GetUserIdFromContext(HubCallerContext context)
         {
             // 从 Context 中获取用户标识符，您可以根据您的身份验证方案来实现此方法
@@ -124,7 +130,7 @@ namespace MainWeb
                         await _databaseService.UpdateUserAsync(user);
                         //允許登錄
                         // 登录成功逻辑
-                        await Clients.Caller.SendAsync("LoginSuccess", "登錄成功 到期時間:" +Utils.FormatDateTime(user.ExpiryDate));
+                        await Clients.Caller.SendAsync("LoginSuccess", "登錄成功 到期時間:" + Utils.FormatDateTime(user.ExpiryDate));
                     }
                 }
                 else
@@ -136,7 +142,7 @@ namespace MainWeb
             catch (Exception ex)
             {
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
-                WriteLogToFile("toolserverlog.txt", logMessage);
+                WriteLog(logMessage);
             }
 
         }
@@ -151,7 +157,7 @@ namespace MainWeb
             catch (Exception ex)
             {
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
-                WriteLogToFile("toolserverlog.txt", logMessage);
+                WriteLog(logMessage);
                 await Clients.Caller.SendAsync("Error", "未知錯誤！");
             }
         }
@@ -196,7 +202,7 @@ namespace MainWeb
                         catch (Exception ex)
                         {
                             string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
-                            WriteLogToFile("toolserverlog.txt", logMessage);
+                            WriteLog(logMessage);
                             await Clients.Caller.SendAsync("Error", "未知錯誤！");
                         }
                         finally
@@ -212,7 +218,7 @@ namespace MainWeb
             {
 
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
-                WriteLogToFile("toolserverlog.txt", logMessage);
+                WriteLog(logMessage);
                 await Clients.Caller.SendAsync("Error", "未知錯誤！" + ex.Message + "当前程序目录：");
             }
         }
@@ -225,27 +231,32 @@ namespace MainWeb
         {
             try
             {
-                return await Task.Run(() => File.ReadAllBytes(fileName));
+                // 使用异步方式打开文件并读取内容
+                using (FileStream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+                {
+                    byte[] buffer = new byte[stream.Length];
+                    await stream.ReadAsync(buffer, 0, buffer.Length);
+                    return buffer;
+                }
             }
             catch (Exception ex)
             {
-                string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
-                WriteLogToFile("toolserverlog.txt", logMessage);
+                string logMessage = $"An error occurred while reading file: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
+                WriteLog(logMessage);
                 await Clients.Caller.SendAsync("Error", "未知錯誤！");
                 return null;
             }
         }
-        private void WriteLogToFile(string filePath, string logMessage)
+        private void WriteLog(string logMessage)
         {
+            string filePath = "toolserverlog.txt";
             try
             {
-                // 将日志消息写入文件
-                File.AppendAllText(filePath, logMessage + Environment.NewLine);
+                File.AppendAllText(filePath, $"{DateTime.Now} - {logMessage}{Environment.NewLine}");
             }
             catch (Exception ex)
             {
-                // 如果写入文件时发生异常，则记录异常并输出到控制台
-                Console.WriteLine("An error occurred while writing log to file: " + ex.Message);
+                Console.WriteLine($"An error occurred while writing to file: {ex.Message}");
             }
         }
         private byte[] GenerateKeyFromSubscriptionAndDeviceID(string license, string deviceId)
