@@ -7,21 +7,12 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Model\新文件夹1\**" />
-    <Compile Remove="Model\新文件夹\**" />
-    <Content Remove="Model\新文件夹1\**" />
-    <Content Remove="Model\新文件夹\**" />
-    <EmbeddedResource Remove="Model\新文件夹1\**" />
-    <EmbeddedResource Remove="Model\新文件夹\**" />
-    <None Remove="Model\新文件夹1\**" />
-    <None Remove="Model\新文件夹\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
     <PackageReference Include="MySql.Data" Version="8.3.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
 </Project>

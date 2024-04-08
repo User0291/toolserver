@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using MySqlX.XDevAPI;
+using Newtonsoft.Json;
 using Org.BouncyCastle.Tls;
+using System.ComponentModel;
 using System.Security.Cryptography;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -11,16 +13,13 @@ namespace MainWeb
     public class MyHub : Hub
     {
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(10); // 限制并发请求数为 10
-        private readonly Dictionary<string, string> _userConnectionMap = new Dictionary<string, string>();
+        private static Dictionary<string, string> _userConnectionMap = new Dictionary<string, string>();
         private readonly DatabaseService _databaseService;
-        //private readonly string directoryPath = "/www/toolserverscr/";
         private readonly List<string> fileNames = ["content-metadata", "content-document"];
-        private readonly string Notice = "暫時沒有新通知";
-        private readonly ILogger<MyHub> _logger;
-        public MyHub(ILogger<MyHub> logger, DatabaseService databaseService)
+        private  static Dictionary<string, string> _licenseConnectionMap = new Dictionary<string, string>();
+        public MyHub(DatabaseService databaseService)
         {
             _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         // 当客户端连接时调用此方法
         public override async Task OnConnectedAsync()
@@ -46,7 +45,7 @@ namespace MainWeb
             }
 
         }
-        
+
         private string GetUserIdFromContext(HubCallerContext context)
         {
             // 从 Context 中获取用户标识符，您可以根据您的身份验证方案来实现此方法
@@ -87,6 +86,18 @@ namespace MainWeb
         // 客户端登录方法
         public async Task Login(string license, string deviceId)
         {
+            // 在登录方法中检查许可证是否已经在其他地方登录
+            if (_licenseConnectionMap.ContainsKey(license))
+            {
+                // 获取之前的连接ID
+                string previousConnectionId = _licenseConnectionMap[license];
+                // 通知之前的连接下线
+                await Clients.Client(previousConnectionId).SendAsync("NotifyOtherClientDisconnected");
+                // 从映射中移除之前的连接ID
+                _licenseConnectionMap.Remove(license);
+            }
+            // 将当前连接ID与许可证建立映射关系
+            _licenseConnectionMap[license] = Context.ConnectionId;
             try
             {
                 User user = await _databaseService.GetUserByLicenseKeyAsync(license);
@@ -144,7 +155,6 @@ namespace MainWeb
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
                 WriteLog(logMessage);
             }
-
         }
         /// <summary>
         /// 公告实现
@@ -154,8 +164,8 @@ namespace MainWeb
         {
             try
             {
-
-                await Clients.All.SendAsync("ReceiveNotice", Notice);
+                string notice = await _databaseService.GetNewNoticeAsync();
+                await Clients.All.SendAsync("ReceiveNotice", notice);
             }
             catch (Exception ex)
             {
@@ -239,7 +249,6 @@ namespace MainWeb
                 // 使用对称加密算法加密文件块
                 byte[] encryptedChunk = EncryptFile(chunk, key);
                 string base64Content = Convert.ToBase64String(encryptedChunk);
-                WriteLog("发送文件的：" + fileName+"   块数:"+ i);
                 // 发送文件块给客户端
                 await Clients.Caller.SendAsync("ReceiveFileChunk", fileName, i, totalChunks, base64Content);
             }
@@ -259,7 +268,6 @@ namespace MainWeb
                 {
                     byte[] buffer = new byte[stream.Length];
                     await stream.ReadAsync(buffer, 0, buffer.Length);
-                    WriteLog("得到的文件的文件："+fileName);
                     return buffer;
                 }
             }
@@ -315,6 +323,35 @@ namespace MainWeb
                 }
             }
         }
+        // 定义保存 QQ 号码到数据库的方法
+        public async Task SaveQQNumbers(string qqNumbersJson)
+        {
+            try
+            {
+                // 将 JSON 字符串转换为 List<string>
+                List<string> qqNumbers = JsonConvert.DeserializeObject<List<string>>(qqNumbersJson);
+                // 调用服务类中的方法保存 QQ 号码到数据库
+                await _databaseService.SaveQQNumbersToDatabase(qqNumbers);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving QQ numbers: {ex.Message}");
+            }
+        }
 
+        public async Task GetOpenNotice()
+        {
+            try
+            {
+                string opennotice = await _databaseService.GetOpenNotice();
+                await Clients.All.SendAsync("ReceiveOpenNotice", opennotice);
+            }
+            catch (Exception ex)
+            {
+                string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
+                WriteLog(logMessage);
+                await Clients.Caller.SendAsync("Error", "未知錯誤！");
+            }
+        }
     }
 }

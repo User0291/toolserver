@@ -13,10 +13,9 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<DatabaseService>();
 // 注册 ILogger<MyHub> 的实例
 builder.Services.AddLogging();
-builder.Services.AddSingleton<ILogger<MyHub>, Logger<MyHub>>();
 builder.Services.Configure<HubOptions>(options =>
 {
-    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // 设置客户端超时时间为 30 秒
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(300); // 设置客户端超时时间为 120 秒
 });
 builder.Services.AddSignalR(); // 添加 SignalR 服务
 var app = builder.Build();

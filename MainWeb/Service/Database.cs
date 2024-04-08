@@ -1,4 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 
 namespace MainWeb
 {
@@ -111,6 +112,84 @@ namespace MainWeb
             }
 
             return version;
+        }
+        /// <summary>
+        /// 获取公告
+        /// </summary>
+        /// <returns></returns>
+        public async Task<string> GetNewNoticeAsync()
+        {
+            string notice = null;
+
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var query = "SELECT notice FROM Notice ORDER BY id DESC LIMIT 1"; // 获取最新的一条公告
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
+                        {
+                            notice = reader.GetString(0);
+                        }
+                    }
+                }
+            }
+
+            return notice;
+        }
+        /// <summary>
+        /// 保存qq號碼
+        /// </summary>
+        /// <param name="qqNumbers"></param>
+        /// <returns></returns>
+        public async Task SaveQQNumbersToDatabase(List<string>? qqNumbers)
+        {
+            if (qqNumbers!=null&&qqNumbers.Count>0)
+                using (var connection = new MySqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+                    // 将新的 QQ 号码插入到数据库中
+                    string insertQuery = "INSERT INTO QQInfo (qqnumber) VALUES (@QQNumber)";
+                    foreach (string qqNumber in qqNumbers)
+                    {
+                        using (var insertCommand = new MySqlCommand(insertQuery, connection))
+                        {
+                            insertCommand.Parameters.AddWithValue("@QQNumber", qqNumber);
+                            await insertCommand.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+        }
+
+        /// <summary>
+        /// 获取外部公告内容
+        /// </summary>
+        /// <returns>外部公告内容</returns>
+        public async Task<string> GetOpenNotice()
+        {
+            string openNotice = null;
+
+            using (var connection = new MySqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+
+                var query = "SELECT opennotice FROM OpenNotice";
+                using (var command = new MySqlCommand(query, connection))
+                {
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.Read())
+                        {
+                            openNotice = reader.GetString(0);
+                        }
+                    }
+                }
+            }
+
+            return openNotice;
         }
     }
 }
