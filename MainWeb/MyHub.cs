@@ -164,12 +164,17 @@ namespace MainWeb
                 await Clients.Caller.SendAsync("Error", "未知錯誤！");
             }
         }
+        /// <summary>
+        /// 发送文件
+        /// </summary>
+        /// <param name="license">订阅</param>
+        /// <param name="deviceId">设备编号</param>
+        /// <returns></returns>
         public async Task RequestFiles(string license, string deviceId)
         {
             User user = await _databaseService.GetUserByLicenseKeyAsync(license);
             try
             {
-
                 if (user == null)
                 {
                     // 越權請求
@@ -195,6 +200,7 @@ namespace MainWeb
                                 // 使用对称加密算法加密文件
                                 byte[] encryptedFile = EncryptFile(fileContent, key);
                                 string base64Content = Convert.ToBase64String(encryptedFile);
+                                WriteLog("发送的文件的：" + fileName);
                                 await Clients.Caller.SendAsync("ReceiveFiles", fileName, base64Content);
                             }
                             else
