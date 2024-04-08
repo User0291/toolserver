@@ -146,7 +146,10 @@ namespace MainWeb
             }
 
         }
-
+        /// <summary>
+        /// 公告实现
+        /// </summary>
+        /// <returns></returns>
         public async Task GetNotice()
         {
             try
@@ -219,7 +222,7 @@ namespace MainWeb
 
                 string logMessage = $"An error occurred: {ex.Message}{Environment.NewLine}{ex.StackTrace}";
                 WriteLog(logMessage);
-                await Clients.Caller.SendAsync("Error", "未知錯誤！" + ex.Message + "当前程序目录：");
+                await Clients.Caller.SendAsync("Error", "未知錯誤！");
             }
         }
         /// <summary>
@@ -236,6 +239,7 @@ namespace MainWeb
                 {
                     byte[] buffer = new byte[stream.Length];
                     await stream.ReadAsync(buffer, 0, buffer.Length);
+                    WriteLog("得到的文件的文件："+fileName);
                     return buffer;
                 }
             }
